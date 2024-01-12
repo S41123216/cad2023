@@ -155,9 +155,66 @@ img.add_border {
 <p>組合後</p>
 <p><img alt="" height="243" src="./../images/組合件.png" width="486"/></p>
 <p>轉入coppeliasim加入ray type，<span> 以 IPv6 ZMQ remote API Python 程式, 配合感測器作動對鋼球施力</span></p>
-<p><span>啟動感應器</span><span><img alt="" height="298" src="./../images/螢幕擷取畫面 2023-12-27 220447.png" width="517"/></span></p>
+<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false"># 以下的 zmq 程式庫已經過修改, 可以在 IPv4 與 IPv6 環境下使用
+# 針對 CoppeliaSim 的 zmq 延伸程式, Python 需要安裝 cbor 與 pyzmq 等兩個模組
+# pip install cbor pyzmq
+from zmqRemoteApi_IPv6 import RemoteAPIClient
+# 由於在 zmq 程式執行時, 希望讓使用者可以透過鍵盤 (或其他電子電機訊號) 指令控制遠端的機電模擬場景
+# Python 程式環境還需要安裝 keyboard 模組, pip install keyboard
+import keyboard
+
+# 利用以下程式碼連接 CoppeliaSim remote API server
+#第一個輸入變數若為 localhost 則只能控制與程式同在的場景
+# 但若第一輸入變數為可連外的 IPv4 或 IPv6 address, 則可用來控制遠端電腦上的模擬場景
+# 23000 為 CoppeliaSim 使用 ZMQ remote API 連線控制時內定的網路埠號
+# client 與 server 的防火牆或代理主機必須讓此埠號的封包 (socket) 通過
+client = RemoteAPIClient('localhost', 23000)
+
+# 利用 getObject 取得場景中的 "sim" 物件參考對應值
+sim = client.getObject('sim')
+
+# 利用 sim 物件的 startSimulation() 方法啟動場景模擬
+sim.startSimulation()
+
+# 利用 getObject 取得 'marble' and 'sensor'  物件的參考對應值
+marble = sim.getObject('./marble')
+sensor = sim.getObject('./sensor')
+
+# 透過變數屬性設定方法將 marble 設為 non-static, 意即具有 dynamic 特性
+sim.setObjectInt32Param(marble, sim.shapeintparam_static, 0)
+
+# 主模擬程序
+while True:
+    if keyboard.is_pressed('q'):
+        # 模擬執行期間, 將滑鼠停在場景, 鍵盤按下 q 可以終止模擬
+        break
+
+    r, dist, pt, obj, normal = sim.handleProximitySensor(sensor)
+    res, dist2, point, obj2, n = sim.readProximitySensor(sensor)
+    # Get the current position of the marble
+    current_position1 = sim.getObjectPosition(marble, -1)
+    current_position2 = sim.getObjectPosition(marble, -1)
+
+    # 當鋼球碰觸感測器時
+    if res &gt; 0:
+        if current_position1[0] &lt; current_position2[0]:
+            # 對鋼球質心施以一個向量力
+            sim.addForceAndTorque(marble, [2.5, 0,-10], [0, 0, 0])
+
+# Stop the simulation
+sim.stopSimulation()
+</pre>
+<p></p>
+<p>把球的名稱改成"marble"</p>
+<p>雷射感測器的名稱改成"sensor"</p>
+<p><span><img alt="" height="57" src="./../images/123.png" width="393"/></span></p>
+<p><span>調整施力</span></p>
+<p><span><img alt="" height="80" src="./../images/螢幕擷取畫面 2024-01-12 102931.png" width="379"/></span></p>
+<p><span>啟動感應器</span></p>
+<p><span><img alt="" height="298" src="./../images/螢幕擷取畫面 2023-12-27 220447.png" width="517"/></span></p>
+<p><span><img alt="" height="344" src="./../images/啟動.gif" width="550"/></span></p>
 <p><span><img alt="" height="246" src="./../images/ww1.gif" width="512"/></span></p>
-<br />W14 << <a href='W14.html'>Previous</a> <a href='倉儲與網站評分項目.html'>Next</a> >> 倉儲與網站評分項目</div>
+<p><span>ttt檔(<a href="https://drive.google.com/file/d/1EuT6G9od-OdnMf74bppuYRPV651pREKB/view?usp=sharing">下載</a>)</span></p><br />W14 << <a href='W14.html'>Previous</a> <a href='倉儲與網站評分項目.html'>Next</a> >> 倉儲與網站評分項目</div>
         
     <!-- footer -->
       <div class="container">
